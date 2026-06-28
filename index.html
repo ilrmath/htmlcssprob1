@@ -484,6 +484,37 @@
 
     .task-item.completed .comment { display: block; }
 
+    .quiz-next {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border: 2px solid var(--orange);
+      border-radius: 12px;
+      color: #8a3f0e;
+      background: var(--orange-soft);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .quiz-next.show { display: block; animation: quizPop 0.35s ease; }
+    .quiz-next a {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--orange);
+      text-decoration: none;
+      box-shadow: 0 3px 0 var(--orange-dark);
+    }
+    .quiz-next a:hover { filter: brightness(1.08); }
+    .quiz-next a:focus-visible { outline: 3px solid var(--neon-yellow); outline-offset: 3px; }
+    @keyframes quizPop {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
     @media (max-height: 700px) {
       #floatingTask {
         right: 14px;
@@ -632,6 +663,12 @@ h2 {
         </span>
         <span class="comment">h2のまわりに実線の境界線が表示されます。</span>
       </label>
+
+      <div class="quiz-next" id="quizNext">
+        🎉 全課題が完了しました。確認テストに進みましょう。<br>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSe4N2337sWtLd-GCF6MESYv-1H77FZgoP0TF0PTxG19W8fDQA/viewform?usp=publish-editor"
+          target="_blank" rel="noopener noreferrer">test1へ進む →</a>
+      </div>
     </div>
   </aside>
 
@@ -713,6 +750,11 @@ h2 {
       const taskItem = checkbox.closest('.task-item');
       if (!taskItem) return;
       taskItem.classList.toggle('completed', checkbox.checked);
+      const tasks = [...document.querySelectorAll('.task-item input[type="checkbox"]')];
+      document.getElementById('quizNext').classList.toggle(
+        'show',
+        tasks.length > 0 && tasks.every(task => task.checked)
+      );
     }
 
     function initializeFloatingTask() {
