@@ -13,6 +13,8 @@
       --orange-pale: #fffaf5;
       --neon-yellow: #ffe600;
       --neon-yellow-soft: #fff7a8;
+      --green: #16865a;
+      --green-soft: #effff7;
       --ink: #3d2d25;
       --muted: #79665d;
       --line: #f0c9b0;
@@ -478,9 +480,11 @@
     }
 
     .task-item.completed {
-      border-color: var(--neon-yellow);
-      background: linear-gradient(135deg, #fff 0%, #fffbd6 100%);
+      border-color: #76d5ad;
+      background: var(--green-soft);
     }
+
+    .task-item.completed input[type="checkbox"] { accent-color: var(--green); }
 
     .task-item.completed .comment { display: block; }
 
@@ -624,7 +628,7 @@ h2 {
     <div class="task-body">
       <p class="task-intro">赤字の部分を入力・修正します。行番号を確認しながら、上から順番に進めましょう。</p>
 
-      <label class="task-item">
+      <label class="task-item" data-task="htmlH2">
         <span class="task-item-main"><input type="checkbox" onchange="toggleComment(this)"><span>① HTMLエリアの <strong>2)</strong> を修正</span></span>
         <span class="task-mini-list">
           <span class="task-line red"><span class="num">2)</span><span class="code-text">&lt;h2&gt;これは中見出し&lt;/h2&gt;</span></span>
@@ -632,7 +636,7 @@ h2 {
         <span class="comment">h2タグで囲むと、中見出しとして表示されます。</span>
       </label>
 
-      <label class="task-item">
+      <label class="task-item" data-task="htmlP">
         <span class="task-item-main"><input type="checkbox" onchange="toggleComment(this)"><span>② HTMLエリアの <strong>3)</strong> を修正</span></span>
         <span class="task-mini-list">
           <span class="task-line red"><span class="num">3)</span><span class="code-text">&lt;p&gt;これはパラグラフ&lt;/p&gt;</span></span>
@@ -640,7 +644,7 @@ h2 {
         <span class="comment">pタグで囲むと、文章の段落になります。</span>
       </label>
 
-      <label class="task-item">
+      <label class="task-item" data-task="htmlLink">
         <span class="task-item-main"><input type="checkbox" onchange="toggleComment(this)"><span>③ HTMLエリアの <strong>4)</strong> に <code>href=</code> を追加</span></span>
         <span class="task-mini-list">
           <span class="task-line red"><span class="num">4)</span><span class="code-text">&lt;a href="https://www.google.com"&gt;リンク&lt;/a&gt;</span></span>
@@ -648,7 +652,7 @@ h2 {
         <span class="comment">hrefには、リンク先のURLを指定します。</span>
       </label>
 
-      <label class="task-item">
+      <label class="task-item" data-task="cssH1Color">
         <span class="task-item-main"><input type="checkbox" onchange="toggleComment(this)"><span>④ CSSエリアの <strong>2)</strong> を修正</span></span>
         <span class="task-mini-list">
           <span class="task-line red"><span class="num">2)</span><span class="code-text">color: blue;</span></span>
@@ -656,7 +660,7 @@ h2 {
         <span class="comment">h1の文字色が青になります。コロンとセミコロンも入力します。</span>
       </label>
 
-      <label class="task-item">
+      <label class="task-item" data-task="cssH2Border">
         <span class="task-item-main"><input type="checkbox" onchange="toggleComment(this)"><span>⑤ CSSエリアの <strong>5)</strong> を修正</span></span>
         <span class="task-mini-list">
           <span class="task-line red"><span class="num">5)</span><span class="code-text">border-style: solid;</span></span>
@@ -688,6 +692,7 @@ h2 {
       inputArea.value = examplePre.textContent;
       updateLineNumbers(inputArea, lineBox);
       updatePreview();
+      updateTasks();
       inputArea.classList.add('flash');
       setTimeout(() => inputArea.classList.remove('flash'), 450);
       setTimeout(() => { checkbox.checked = false; }, 120);
@@ -746,10 +751,45 @@ h2 {
       });
     }
 
+    function normalized(value) {
+      return value.replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function getTaskState() {
+      const htmlSource = htmlInput.value;
+      const css = normalized(cssInput.value);
+
+      return {
+        htmlH2: /<h2\b[^>]*>\s*これは中見出し\s*<\/h2>/i.test(htmlSource),
+        htmlP: /<p\b[^>]*>\s*これはパラグラフ\s*<\/p>/i.test(htmlSource),
+        htmlLink: /<a\b[^>]*href\s*=\s*["']https:\/\/www\.google\.com\/?["'][^>]*>\s*リンク\s*<\/a>/i.test(htmlSource),
+        cssH1Color: /h1\s*\{[^}]*color\s*:\s*blue\s*;[^}]*\}/.test(css),
+        cssH2Border: /h2\s*\{[^}]*border-style\s*:\s*solid\s*;[^}]*\}/.test(css)
+      };
+    }
+
+    function updateTasks() {
+      const state = getTaskState();
+      const tasks = [...document.querySelectorAll('.task-item[data-task]')];
+
+      tasks.forEach(taskItem => {
+        const complete = Boolean(state[taskItem.dataset.task]);
+        const checkbox = taskItem.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = complete;
+        taskItem.classList.toggle('completed', complete);
+      });
+
+      document.getElementById('quizNext').classList.toggle(
+        'show',
+        tasks.length > 0 && tasks.every(task => state[task.dataset.task])
+      );
+    }
+
     function toggleComment(checkbox) {
+      updateTasks();
       const taskItem = checkbox.closest('.task-item');
       if (!taskItem) return;
-      taskItem.classList.toggle('completed', checkbox.checked);
+      checkbox.checked = taskItem.classList.contains('completed');
       const tasks = [...document.querySelectorAll('.task-item input[type="checkbox"]')];
       document.getElementById('quizNext').classList.toggle(
         'show',
@@ -836,11 +876,13 @@ h2 {
     htmlInput.addEventListener('input', () => {
       updatePreview();
       updateLineNumbers(htmlInput, htmlLines);
+      updateTasks();
     });
 
     cssInput.addEventListener('input', () => {
       updatePreview();
       updateLineNumbers(cssInput, cssLines);
+      updateTasks();
     });
 
     htmlInput.addEventListener('scroll', () => { htmlLines.scrollTop = htmlInput.scrollTop; });
@@ -852,6 +894,7 @@ h2 {
       updateLineNumbers(cssInput, cssLines);
       updateExampleLineNumbers(document.querySelector('#htmlExample pre'), document.getElementById('htmlExampleLines'));
       updateExampleLineNumbers(document.querySelector('#cssExample pre'), document.getElementById('cssExampleLines'));
+      updateTasks();
       initializeFloatingTask();
     });
   </script>
